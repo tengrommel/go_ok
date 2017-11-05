@@ -94,9 +94,18 @@ func mainAdmin(c echo.Context) error{
 	return c.String(http.StatusOK, "horay you are on the secret admin main page!")
 }
 
+func ServerHeader(next echo.HandlerFunc) echo.HandlerFunc{
+	return func(c echo.Context) error{
+		c.Response().Header().Set(echo.HeaderServer, "Blue/1.0")
+		c.Response().Header().Set("notReader", "Blue")
+		return next(c)
+	}
+}
+
 func main(){
 	fmt.Println("welcome to the server")
 	e := echo.New()
+	e.Use(ServerHeader)
 
 	g := e.Group("/admin")
 	g.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
