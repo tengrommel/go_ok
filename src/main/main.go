@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"io/ioutil"
 	"log"
 	"encoding/json"
@@ -98,12 +99,24 @@ func main(){
 	e := echo.New()
 
 	g := e.Group("/admin")
+	g.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: `[${time_rfc3339}]  ${status} ${method} ${host}${path} ${latency_human}` + "\n",
+	}))
+
+	g.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+		// check in the DB
+		if username == "jack" && password == "1234" {
+			return true, nil
+		}
+		return false, nil
+	}))
 	g.GET("/main", mainAdmin)
 
 	e.GET("/", yallo)
+	e.GET("/AfuckA", func(c echo.Context) error {return nil})
 	e.GET("/cats/:data", getCats)
 	e.POST("/cats", addCat)
 	e.POST("/dogs", addDog)
 	e.POST("/hamsters", addHamster)
-	e.Start(":8000")
+	e.Logger.Fatal(e.Start(":8000"))
 }
