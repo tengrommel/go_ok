@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"encoding/json"
+	"time"
+	"strings"
 )
 
 type Cat struct {
@@ -94,6 +96,24 @@ func mainAdmin(c echo.Context) error{
 	return c.String(http.StatusOK, "horay you are on the secret admin main page!")
 }
 
+func mainCookie(c echo.Context) error{
+	return c.String(http.StatusOK, "you are on the not yet secret cookie page!")
+}
+
+func login(c echo.Context) error {
+	username := c.QueryParam("username")
+	password := c.QueryParam("password")
+	if username == "jack" && password == "1234" {
+		cookie := &http.Cookie{}
+		cookie.Name = "sessionID"
+		cookie.Value = "some_string"
+		cookie.Expires = time.Now().Add(48 * time.Hour)
+		c.SetCookie(cookie)
+		return c.String(http.StatusOK, "You were logged in!")
+	}
+	return c.String(http.StatusUnauthorized, "Your username or password were wrong")
+}
+
 func ServerHeader(next echo.HandlerFunc) echo.HandlerFunc{
 	return func(c echo.Context) error{
 		c.Response().Header().Set(echo.HeaderServer, "Blue/1.0")
@@ -102,25 +122,51 @@ func ServerHeader(next echo.HandlerFunc) echo.HandlerFunc{
 	}
 }
 
+func checkCookie(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cookie, err := c.Cookie("sessionID")
+
+		if err != nil{
+			if strings.Contains(err.Error(), "named cookie not present"){
+				return c.String(http.StatusUnauthorized,"you dont have the any cookie")
+			}
+			log.Println(err)
+			return err
+		}
+		if cookie.Value == "some_string"{
+			return next(c)
+		}
+		return c.String(http.StatusUnauthorized, "you donot have the right cookie, cookie")
+	}
+}
+
 func main(){
 	fmt.Println("welcome to the server")
 	e := echo.New()
 	e.Use(ServerHeader)
 
-	g := e.Group("/admin")
-	g.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	adminGroup := e.Group("/admin")
+	cookieGroup := e.Group("/cookie")
+
+	adminGroup.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: `[${time_rfc3339}]  ${status} ${method} ${host}${path} ${latency_human}` + "\n",
 	}))
 
-	g.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
+	adminGroup.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
 		// check in the DB
 		if username == "jack" && password == "1234" {
 			return true, nil
 		}
 		return false, nil
 	}))
-	g.GET("/main", mainAdmin)
 
+	cookieGroup.Use(checkCookie)
+
+	cookieGroup.GET("/main", mainCookie)
+
+	adminGroup.GET("/main", mainAdmin)
+
+	e.GET("/login", login)
 	e.GET("/", yallo)
 	e.GET("/AfuckA", func(c echo.Context) error {return nil})
 	e.GET("/cats/:data", getCats)
