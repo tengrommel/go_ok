@@ -99,7 +99,7 @@ func addHamster(c echo.Context) error {
 }
 
 func mainAdmin(c echo.Context) error{
-	return c.String(http.StatusOK, "horay you are on the secret admin main page!")
+	return c.String(http.StatusOK, "horay you are on the secret admin Tut_1 page!")
 }
 
 func mainCookie(c echo.Context) error{
@@ -206,11 +206,11 @@ func main(){
 
 	cookieGroup.Use(checkCookie)
 
-	cookieGroup.GET("/main", mainCookie)
+	cookieGroup.GET("/Tut_1", mainCookie)
 
-	adminGroup.GET("/main", mainAdmin)
+	adminGroup.GET("/Tut_1", mainAdmin)
 
-	jwtGroup.GET("/main", mainJwt)
+	jwtGroup.GET("/Tut_1", mainJwt)
 
 	e.GET("/login", login)
 	e.GET("/", yallo)
