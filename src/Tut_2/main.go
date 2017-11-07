@@ -136,5 +136,5 @@ func main() {
 	if len(os.Args) < 2 {
 		log.Fatalln("Missing Url arg")
 	}
-
+	recurDownloader(os.Args[1], 0)
 }
